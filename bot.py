@@ -2,6 +2,8 @@ from discord import Intents
 from dotenv import load_dotenv
 from discord.ext import commands
 from os import getenv
+import asyncio
+import cogs.team_manager
 
 exts =  []
 
@@ -20,7 +22,13 @@ class MlscBot(commands.Bot):
   async def on_ready(self):
     print("MLSC Bot is running ......")
 
+async def main(bot: MlscBot):
+    await cogs.team_manager.setup(bot)
+    await bot.start(getenv("DISCORD_TOKEN"))
+
+
 if __name__ == "__main__":
-  bot = MlscBot(command_prefix='!', intents=Intents.all())
-  load_dotenv()
-  bot.run(getenv("DISCORD_TOKEN"))
+    bot = MlscBot(command_prefix="!", intents=Intents.all())
+    load_dotenv()
+    # bot.run(getenv("DISCORD_TOKEN"))
+    asyncio.run(main(bot))
