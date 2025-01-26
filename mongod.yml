@@ -1,0 +1,8 @@
+net:
+  bindIp: 127.0.0.1
+  port: 27017
+storage:
+  dbPath: db
+systemLog:
+  destination: file
+  path: db\logs\mongod.log
