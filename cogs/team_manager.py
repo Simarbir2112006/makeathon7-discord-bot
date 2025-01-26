@@ -1,6 +1,7 @@
 from discord import PermissionOverwrite
 from discord.ext import commands
 from discord.utils import get
+import re
 
 
 class Channel(commands.Cog):
@@ -48,15 +49,17 @@ class Channel(commands.Cog):
         # --> add csv checking code here <--
         # Use display_name dict and team_name variable to check
 
-
+        team_name = re.sub(" +", " ", team_name)
+        team_name=team_name.strip().replace(" ","-").lower()
+        
         try:
-            await ctx.guild.create_text_channel("test2", category=category, overwrites = ovewrite)
+            await ctx.guild.create_text_channel(team_name, category=category, overwrites = ovewrite)
             await ctx.send("Text channel created under 'test'")
         except Exception as e:
             await ctx.send(f"Failed to create text channel: {e}")
 
         try:
-            await ctx.guild.create_voice_channel("test2", category=category, overwrites = ovewrite)
+            await ctx.guild.create_voice_channel(team_name, category=category, overwrites = ovewrite)
             await ctx.send("Voice channel created under 'test'")
         except Exception as e:
             await ctx.send(f"Failed to create voice channel: {e}")
