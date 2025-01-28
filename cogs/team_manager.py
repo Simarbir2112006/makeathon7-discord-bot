@@ -96,7 +96,7 @@ class Channel(commands.Cog):
                     break
 
                 await ctx.send(
-                    f"User: **{username} ({fullname})** does not match any user in the list of participants."
+                    f"User: **{username} ({fullname})** of **Team {team_name}** does not match any user in the list of participants."
                 )
                 break
 
