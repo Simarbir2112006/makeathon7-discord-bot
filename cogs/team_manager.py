@@ -13,7 +13,7 @@ from rapidfuzz import fuzz
 
 
 class Channel(commands.Cog):
-    def __init__(self, client) -> None:
+    def __init__(self, client: commands.Bot) -> None:
         self.client = client
         self.global_category = "test"  # "team channel creator"
         self.csv_file = "./Makeathon6.csv"
@@ -186,6 +186,7 @@ class Channel(commands.Cog):
             mg_collection = mg_db["team_channel"]
             mg_document = {
                 "user": ctx.author.name,
+                "team_role_id": role.id,
                 "text_channel_id": created_channel[0].id,
                 "voice_channel_id": created_channel[1].id,
                 "date": int(
@@ -213,6 +214,53 @@ class Channel(commands.Cog):
                     found = True
                     break
         return found
+
+    @commands.command()
+    async def channel_delete_all(self, ctx: commands.Context) -> None:
+        if not self.is_author_authorised(ctx):
+            await ctx.send("You are not authorised to perform this action.")
+            return
+
+        mg_client = pymongo.MongoClient("localhost", 27017)
+        mg_db = mg_client["mlsc"]
+        mg_collection = mg_db["team_channel"]
+        total_items = 0
+        for document in mg_collection.find():
+            text_channel_id = document["text_channel_id"]
+            voice_channel_id = document["voice_channel_id"]
+            if ctx.guild:
+                team_role: Role | None = ctx.guild.get_role(document["team_role_id"])
+                text_channel: discord.TextChannel | None = discord.utils.get(
+                    ctx.guild.text_channels, id=text_channel_id
+                )
+                voice_channel: discord.VoiceChannel | None = discord.utils.get(
+                    ctx.guild.voice_channels, id=voice_channel_id
+                )
+                if any([team_role, text_channel, voice_channel]):
+                    total_items += 1
+                    if team_role:
+                        await team_role.delete()
+                    if text_channel:
+                        await text_channel.delete()
+                    if voice_channel:
+                        await voice_channel.delete()
+
+            ## TODO: Ask if we need to delete the document from the collection
+            # mg_collection.delete_one(filter=document)
+        await ctx.send(
+            f"Total of {total_items} team role(s) & channel(s) have been deleted."
+        )
+
+    def is_author_authorised(self, ctx: commands.Context) -> bool:
+        if isinstance(ctx.author, discord.Member) and (
+            ctx.author.guild_permissions.administrator
+            or (
+                discord.utils.get(ctx.author.roles, name="Makeathon-Coordinators")
+                and discord.utils.get(ctx.author.roles, name="Coordinators")
+            )
+        ):
+            return True
+        return False
 
 
 @dataclass
