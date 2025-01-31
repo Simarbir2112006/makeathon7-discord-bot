@@ -256,7 +256,7 @@ class Channel(commands.Cog):
             ctx.author.guild_permissions.administrator
             or (
                 discord.utils.get(ctx.author.roles, name="Makeathon-Coordinators")
-                and discord.utils.get(ctx.author.roles, name="Coordinators")
+                or discord.utils.get(ctx.author.roles, name="Coordinators")
             )
         ):
             return True
