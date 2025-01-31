@@ -5,16 +5,18 @@ from dataclasses import dataclass
 
 import discord
 import discord.ext
-import pymongo
 from discord import Member, PermissionOverwrite
 from discord.ext import commands
 from discord.role import Role
 from rapidfuzz import fuzz
 
+from db.mongo import MongoDB
+
 
 class Channel(commands.Cog):
-    def __init__(self, client: commands.Bot) -> None:
+    def __init__(self, client: commands.Bot, mdb: MongoDB) -> None:
         self.client = client
+        self.mdb = mdb
         self.global_category = "test"  # "team channel creator"
         self.csv_file = "./Makeathon6.csv"
 
@@ -181,7 +183,7 @@ class Channel(commands.Cog):
                 await member.add_roles(role)
             await ctx.send(f"**{role_name}** role assigned to the members.")
 
-            mg_client = pymongo.MongoClient("localhost", 27017)
+            mg_client = self.mdb.client
             mg_db = mg_client["mlsc"]
             mg_collection = mg_db["team_channel"]
             mg_document = {
@@ -221,7 +223,7 @@ class Channel(commands.Cog):
             await ctx.send("You are not authorised to perform this action.")
             return
 
-        mg_client = pymongo.MongoClient("localhost", 27017)
+        mg_client = self.mdb.client
         mg_db = mg_client["mlsc"]
         mg_collection = mg_db["team_channel"]
         total_items = 0
@@ -275,5 +277,5 @@ class Participant:
         return f"{self.firstname} {self.lastname}"
 
 
-async def setup(client) -> None:
-    await client.add_cog(Channel(client))
+async def setup(client, mdb) -> None:
+    await client.add_cog(Channel(client, mdb))
