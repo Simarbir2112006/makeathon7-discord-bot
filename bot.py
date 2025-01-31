@@ -43,7 +43,7 @@ def run_mongodb_server():
         log_path.mkdir(exist_ok=True)
         log_path.joinpath("mongod.log").touch()
 
-        mongod_conf["systemLog"]["path"] = str(log_path.joinpath("mongod.log"))
+        mongod_conf["systemLog"]["path"] = log_path.joinpath("mongod.log").as_posix()
         with open(mongod_conf_file, "w") as yaml_file:
             yaml.dump(mongod_conf, yaml_file)
 
