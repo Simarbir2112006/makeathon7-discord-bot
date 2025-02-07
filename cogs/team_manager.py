@@ -247,8 +247,7 @@ class Channel(commands.Cog):
                     if voice_channel:
                         await voice_channel.delete()
 
-            ## TODO: Ask if we need to delete the document from the collection
-            # mg_collection.delete_one(filter=document)
+            mg_collection.delete_one(filter=document)
         await ctx.send(
             f"Total of {total_items} team role(s) & channel(s) have been deleted."
         )
