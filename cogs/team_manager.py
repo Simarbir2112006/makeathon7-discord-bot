@@ -5,16 +5,18 @@ from dataclasses import dataclass
 
 import discord
 import discord.ext
-import pymongo
 from discord import Member, PermissionOverwrite
 from discord.ext import commands
 from discord.role import Role
 from rapidfuzz import fuzz
 
+from db.mongo import MongoDB
+
 
 class Channel(commands.Cog):
-    def __init__(self, client) -> None:
+    def __init__(self, client: commands.Bot, mdb: MongoDB) -> None:
         self.client = client
+        self.mdb = mdb
         self.global_category = "test"  # "team channel creator"
         self.csv_file = "./Makeathon6.csv"
 
@@ -181,11 +183,12 @@ class Channel(commands.Cog):
                 await member.add_roles(role)
             await ctx.send(f"**{role_name}** role assigned to the members.")
 
-            mg_client = pymongo.MongoClient("localhost", 27017)
+            mg_client = self.mdb.client
             mg_db = mg_client["mlsc"]
             mg_collection = mg_db["team_channel"]
             mg_document = {
                 "user": ctx.author.name,
+                "team_role_id": role.id,
                 "text_channel_id": created_channel[0].id,
                 "voice_channel_id": created_channel[1].id,
                 "date": int(
@@ -214,6 +217,52 @@ class Channel(commands.Cog):
                     break
         return found
 
+    @commands.command()
+    async def channel_delete_all(self, ctx: commands.Context) -> None:
+        if not self.is_author_authorised(ctx):
+            await ctx.send("You are not authorised to perform this action.")
+            return
+
+        mg_client = self.mdb.client
+        mg_db = mg_client["mlsc"]
+        mg_collection = mg_db["team_channel"]
+        total_items = 0
+        for document in mg_collection.find():
+            text_channel_id = document["text_channel_id"]
+            voice_channel_id = document["voice_channel_id"]
+            if ctx.guild:
+                team_role: Role | None = ctx.guild.get_role(document["team_role_id"])
+                text_channel: discord.TextChannel | None = discord.utils.get(
+                    ctx.guild.text_channels, id=text_channel_id
+                )
+                voice_channel: discord.VoiceChannel | None = discord.utils.get(
+                    ctx.guild.voice_channels, id=voice_channel_id
+                )
+                if any([team_role, text_channel, voice_channel]):
+                    total_items += 1
+                    if team_role:
+                        await team_role.delete()
+                    if text_channel:
+                        await text_channel.delete()
+                    if voice_channel:
+                        await voice_channel.delete()
+
+            mg_collection.delete_one(filter=document)
+        await ctx.send(
+            f"Total of {total_items} team role(s) & channel(s) have been deleted."
+        )
+
+    def is_author_authorised(self, ctx: commands.Context) -> bool:
+        if isinstance(ctx.author, discord.Member) and (
+            ctx.author.guild_permissions.administrator
+            or (
+                discord.utils.get(ctx.author.roles, name="Makeathon-Coordinators")
+                or discord.utils.get(ctx.author.roles, name="Coordinators")
+            )
+        ):
+            return True
+        return False
+
 
 @dataclass
 class Participant:
@@ -227,5 +276,5 @@ class Participant:
         return f"{self.firstname} {self.lastname}"
 
 
-async def setup(client) -> None:
-    await client.add_cog(Channel(client))
+async def setup(client, mdb) -> None:
+    await client.add_cog(Channel(client, mdb))

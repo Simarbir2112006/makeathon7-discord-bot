@@ -2,7 +2,7 @@ net:
   bindIp: 127.0.0.1
   port: 27017
 storage:
-  dbPath: db
+  dbPath: db/data
 systemLog:
   destination: file
-  path: db\logs\mongod.log
+  path: db/data/logs/mongod.log
